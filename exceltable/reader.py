@@ -10,17 +10,14 @@ import xlrd
 
 __all__ = ("Reader", "DictReader")
 
+
 NEWLINE = "\n"
-EPOCH = datetime.datetime(1900, 1, 1)
-NODATE = datetime.date(1899, 12, 31)
 NOTIME = datetime.time(0)
 CONVERT = {
-        #xlrd.XL_CELL_EMPTY: lambda x: None,
+        #xlrd.XL_CELL_EMPTY: (is added at runtime)
         xlrd.XL_CELL_TEXT: str,
         xlrd.XL_CELL_NUMBER: float,
-        xlrd.XL_CELL_DATE: lambda f:
-                EPOCH + datetime.timedelta(days=f - (1 if f < 60 else 2)),
-                # 1900-02-29 on Excel is taken as 1900-02-28 here.
+        #xlrd.XL_CELL_DATE: (is added at runtime)
         xlrd.XL_CELL_BOOLEAN: bool,
         xlrd.XL_CELL_ERROR: lambda n: xlrd.error_text_from_code.get(n),
         xlrd.XL_CELL_BLANK: str,
@@ -50,7 +47,7 @@ class BaseReader(object):
         header_rows     (int) rows to read as field names; default=1
         empty           (float or str) alternative value for empty cells
         repeat          (bool) repeat cell value of the previous row if blank
-        trim            (bool) suppress redundant zeros [5]_
+        trim            (bool) suppress redundant zeros [5]_; default=True
 
         .. [1]  stop_row itself is not included in the data read.
         .. [2]  this callable (function) is to accept a list with the row
@@ -75,6 +72,14 @@ class BaseReader(object):
         self.fieldnames = self._get_fields(header_rows)
         self._convert = CONVERT.copy()
         self._convert[xlrd.XL_CELL_EMPTY] = lambda x: self.empty
+        self._convert[xlrd.XL_CELL_DATE] = lambda f: self._mkdt(f)
+
+    def _mkdt(self, f):
+        t = xlrd.xldate_as_tuple(f, self.book.datemode)
+        # Trimming time part is done in _trim().
+        #if f.is_integer(): return datetime.date(*t[:3])
+        if f < 1: return datetime.time(*t[3:])
+        return datetime.datetime(*t)
 
     def _mergearea(self, row, col):
         """Get the associated merge area.
@@ -95,7 +100,7 @@ class BaseReader(object):
         return None
 
     @staticmethod
-    def isbreak_factory(criteria):
+    def _isbreak_factory(criteria):
         if isinstance(criteria, int):
             def isbreak(row_or_col, _): return row_or_col == criteria
         elif isinstance(criteria, (float, str)):
@@ -121,7 +126,7 @@ class BaseReader(object):
         c0 = self.start_col
         rows = [self.sheet.row_values(r0 + r) for r in range(header_rows)]
         maxcol = c0 + max(len(rows[r]) for r in range(header_rows))
-        isbreak = self.isbreak_factory(self.stop_col)
+        isbreak = self._isbreak_factory(self.stop_col)
         for col in range(c0, maxcol + 1):
             f = []
             for row in range(header_rows):
@@ -151,10 +156,10 @@ class BaseReader(object):
     @staticmethod
     def _trim(values):
         for v in values:
-            if isinstance(v, float) and v.is_integer(): v = int(v)
-            elif isinstance(v, datetime.datetime):
-                if v.time() == NOTIME: v = v.date()
-                elif v.date() == NODATE: v = v.time()
+            if isinstance(v, float) and v.is_integer():
+                v = int(v)
+            elif isinstance(v, datetime.datetime) and v.time() == NOTIME:
+                v = v.date()
             yield v
 
     def _build(self, kv):
@@ -168,7 +173,7 @@ class BaseReader(object):
 
     def __iter__(self):
         cols = slice(self.start_col, self.start_col + len(self.fieldnames))
-        isbreak = self.isbreak_factory(self.stop_row)
+        isbreak = self._isbreak_factory(self.stop_row)
         if self.repeat: prev = [None] * len(self.fieldnames)
         for row in count(self.start_row + self.header_rows):
             try:
