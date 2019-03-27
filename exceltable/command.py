@@ -47,7 +47,11 @@ NBSP = "\xa0"
 RADIX26 = "".maketrans(ascii_uppercase + ascii_lowercase,
         digits + ascii_uppercase[:16] + digits + ascii_lowercase[:16])
 R1C1FORMAT = re.compile(r"[Rr](\d+)[Cc](\d+)$", re.IGNORECASE)
-A1FORMAT = re.compile(r"(\w+)(\d+)$", re.IGNORECASE)
+A1FORMAT = re.compile(r"([A-Z]+)(\d+)$", re.IGNORECASE)
+
+
+class Args(dict):
+    pass
 
 
 def _inner_col(col):
@@ -88,32 +92,41 @@ def decompose_address(s):
     raise IndexError("illegal cell address '{}'".format(s))
 
 
-def main():
-    args = docopt.docopt(
-            __doc__.format(script=__file__),
-            version=__version__)
+def main(args, file=None):
+    args = Args(args)
     for k, v in args.items():
         setattr(args, k.lstrip("-").lower().replace("-", "_"), v)
-    args.start = decompose_address(args.start)
-    args.stop = decompose_address(args.stop) if args.stop else ("", "")
+    if hasattr(args, "start"):
+        args.start_row, args.start_col = decompose_address(args.start)
+    if hasattr(args, "stop"):
+        args.stop_row, args.stop_col = decompose_address(args.stop)
     book, sheet = (args.sheetspec.split("!", 1) + [None])[:2]
     table = reader.DictReader(book, sheet,
-                start_row=_inner_row(_eval(args.start_row or args.start[0])),
-                stop_row=_inner_row(_eval(args.stop_row or args.stop[0])),
-                start_col=_inner_col(_eval(args.start_col or args.start[1])),
-                stop_col=_inner_col(_eval(args.stop_col or args.stop[1])),
-                header_rows=_eval(args.header_rows),
-                empty=_eval(args.empty),
-                repeat=args.repeat,
-                trim=not args.raw)
+                start_row=_inner_row(_eval(getattr(args, "start_row", 1))),
+                stop_row=_inner_row(_eval(getattr(args, "stop_row", ""))),
+                start_col=_inner_col(_eval(getattr(args, "start_col", "A"))),
+                stop_col=_inner_col(_eval(getattr(args, "stop_col", ""))),
+                header_rows=_eval(getattr(args, "header_rows", 1)),
+                empty=_eval(getattr(args, "empty", "")),
+                repeat=bool(getattr(args, "repeat", False)),
+                trim=not(bool(getattr(args, "raw", False))))
     fieldnames = [f.replace(NBSP, " ") for f in table.fieldnames]
-    writer = csv.DictWriter(sys.stdout, fieldnames)
-    if args.header: writer.writeheader()
+    if not file:
+        if bool(getattr(args, "header", False)):
+            return fieldnames, table
+        return table
+    writer = csv.DictWriter(file, fieldnames)
+    if bool(getattr(args, "header", False)): writer.writeheader()
     for row in table:
         for k, v in row.items():
             row[k] = str(v or "").replace(NBSP, " ")
         writer.writerow(row)
 
 
+def __main__():
+    main(docopt.docopt(__doc__.format(script=__file__), version=__version__),
+         file=sys.stdout)
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(__main__())

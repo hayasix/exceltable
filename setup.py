@@ -17,6 +17,6 @@ setup(
     packages = ["exceltable"],
     install_requires = ["xlrd>=0.9.4", "docopt>=0.6.2"],
     entry_points = dict(
-            console_scripts = ["exceltable=exceltable.command:main"],
+            console_scripts = ["exceltable=exceltable.command:__main__"],
             ),
     )

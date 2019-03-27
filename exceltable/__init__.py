@@ -3,10 +3,10 @@
 
 __all__ = ("Reader", "DictReader")
 
-__version__ = "3.3.4"
-__author__ = "HAYASI Hideki"
-__email__ = "linxs@linxs.org"
+__version__ = "3.4.0"
+__author__ = "HAYASHI,Hideki"
+__email__ = "hideki@hayasix.com"
 __license__ = "ZPL 2.1"
-__copyright__ = "Copyright (C) HAYASI Hideki."
+__copyright__ = "Copyright (C) HAYASHI,Hideki."
 
 from .reader import Reader, DictReader

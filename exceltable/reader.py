@@ -138,7 +138,11 @@ class BaseReader(object):
                         v = ""
                 elif ma[0] - r0 == row: v = rows[row][ma[2]]
                 else: v = None
-                if v: f.append(v)
+                if v:
+                    v = str(v)
+                    if v.endswith(".0"):
+                        v = v[:-2]
+                    f.append(v)
             field = "_".join(f).replace(NEWLINE, "")
             fields.append(field or xlrd.colname(col))
             if isbreak(col, field): break
