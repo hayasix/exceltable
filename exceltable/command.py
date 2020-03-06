@@ -32,6 +32,7 @@ following notations are available for ROW/COL/DEFVAL:
 
 
 import sys
+import os
 import argparse
 import csv
 from string import digits, ascii_uppercase, ascii_lowercase
@@ -124,7 +125,8 @@ def main(args, file=None):
 
 
 def __main__():
-    main(docopt.docopt(__doc__.format(script=__file__), version=__version__),
+    main(docopt.docopt(__doc__.format(script="exceltable"),
+                       version=__version__),
          file=sys.stdout)
 
 
