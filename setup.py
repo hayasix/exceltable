@@ -1,5 +1,5 @@
-#/usr/bin/env python3.5
-# vim: set fileencoding=utf-8 fileformat=unix :
+#/usr/bin/env python3
+# vim: set fileencoding=utf-8 fileformat=unix expandtab :
 
 from setuptools import setup
 

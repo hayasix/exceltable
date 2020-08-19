@@ -111,7 +111,7 @@ class BaseReader(object):
             def isbreak(_, value): return not(bool(value))
         return isbreak
 
-    def _get_fields(self, header_rows):
+    def _get_fields(self, header_rows=1):
         """Get the field names.
 
         header_rows (int)   number of rows of the header; default=1
@@ -186,14 +186,13 @@ class BaseReader(object):
             except IndexError:
                 break
             values = [self._convert[t](v) for (t, v) in zip(types, values)]
-            if isbreak(row, values[0]): break
+            if len(values) < 1 or isbreak(row, values[0]): break
             if self.repeat:
                 values = [p if v in (None, "") else v
                         for (v, p) in zip(values, prev)]
             if self.trim: values = self._trim(values)
             yield self._build(self.fieldnames, values)
             if self.repeat: prev = values
-        raise StopIteration
 
 
 class _CSVRecord(object):

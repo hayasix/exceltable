@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.5
+#!/usr/bin/env python3
 # vim: set fileencoding=utf-8 fileformat=unix :
 
 """Usage: {script} [options] SHEETSPEC
@@ -97,9 +97,9 @@ def main(args, file=None):
     args = Args(args)
     for k, v in args.items():
         setattr(args, k.lstrip("-").lower().replace("-", "_"), v)
-    if hasattr(args, "start"):
+    if hasattr(args, "start") and args.start:
         args.start_row, args.start_col = decompose_address(args.start)
-    if hasattr(args, "stop"):
+    if hasattr(args, "stop") and args.stop:
         args.stop_row, args.stop_col = decompose_address(args.stop)
     book, sheet = (args.sheetspec.split("!", 1) + [None])[:2]
     table = reader.DictReader(book, sheet,
@@ -125,9 +125,9 @@ def main(args, file=None):
 
 
 def __main__():
-    main(docopt.docopt(__doc__.format(script="exceltable"),
-                       version=__version__),
-         file=sys.stdout)
+    args = docopt.docopt(__doc__.format(script="exceltable"),
+                       version=__version__)
+    main(args, file=sys.stdout)
 
 
 if __name__ == "__main__":
