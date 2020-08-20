@@ -88,7 +88,7 @@ Zope Public License (ZPL) Version 2.1 を採用しています。
 により、指定のファイル・シート・範囲に記述された表の内容を読み取り、
 全レコードを標準出力へ CSV 形式で書き出せます。::
 
-    C:> python exceltable.py --header_rows=2
+    C:> python exceltable.py --header-rows=2
     HHHH,HHHHHH,HHHHHH,HHHHHH,HHHHHH,HHHHHH
     xxxx,xxxxxx,xxxxxx,xxxxxx,xxxxxx,xxxxxx
     xxxx,xxxxxx,xxxxxx,xxxxxx,xxxxxx,xxxxxx
