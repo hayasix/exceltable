@@ -93,31 +93,25 @@ def decompose_address(s):
     raise IndexError("illegal cell address '{}'".format(s))
 
 
-def main(args, file=None):
-    args = Args(args)
-    for k, v in args.items():
-        setattr(args, k.lstrip("-").lower().replace("-", "_"), v)
-    if hasattr(args, "start") and args.start:
-        args.start_row, args.start_col = decompose_address(args.start)
-    if hasattr(args, "stop") and args.stop:
-        args.stop_row, args.stop_col = decompose_address(args.stop)
-    book, sheet = (args.sheetspec.split("!", 1) + [None])[:2]
+def main(sheetspec, start, stop,
+         header_rows=1,
+         empty_value=None,
+         repeat=False,
+         raw=False,
+         file=None,
+         output_header=True):
+    book, sheet = (sheetspec.split("!", 1) + [None])[:2]
     table = reader.DictReader(book, sheet,
-                start_row=_inner_row(_eval(getattr(args, "start_row", 1))),
-                stop_row=_inner_row(_eval(getattr(args, "stop_row", ""))),
-                start_col=_inner_col(_eval(getattr(args, "start_col", "A"))),
-                stop_col=_inner_col(_eval(getattr(args, "stop_col", ""))),
-                header_rows=_eval(getattr(args, "header_rows", 1)),
-                empty=_eval(getattr(args, "empty", "")),
-                repeat=bool(getattr(args, "repeat", False)),
-                trim=not(bool(getattr(args, "raw", False))))
+                start_row=start[0], stop_row=stop[0],
+                start_col=start[1], stop_col=stop[1],
+                header_rows=header_rows,
+                empty=empty_value, repeat=repeat, trim=not raw)
     fieldnames = [f.replace(NBSP, " ") for f in table.fieldnames]
     if not file:
-        if bool(getattr(args, "header", False)):
-            return fieldnames, table
+        if output_header: return fieldnames, table
         return table
     writer = csv.DictWriter(file, fieldnames)
-    if bool(getattr(args, "header", False)): writer.writeheader()
+    if output_header: writer.writeheader()
     for row in table:
         for k, v in row.items():
             row[k] = str(v or "").replace(NBSP, " ")
@@ -127,7 +121,26 @@ def main(args, file=None):
 def __main__():
     args = docopt.docopt(__doc__.format(script="exceltable"),
                        version=__version__)
-    main(args, file=sys.stdout)
+    sr = sc = er = ec = None
+    if args["--start"]: sr, sc = decompose_address(args["--start"])
+    if args["--stop"]: er, ec = decompose_address(args["--stop"])
+    if args["--start-row"]: sr = args["--start-row"]
+    if args["--stop-row"]: er = args["--stop-row"]
+    if args["--start-col"]: sc = args["--start-col"]
+    if args["--stop-col"]: ec = args["--stop-col"]
+    sr = _inner_row(_eval(sr or 1))
+    sc = _inner_col(_eval(sc or "A"))
+    er = _inner_row(_eval(er or ""))
+    ec = _inner_col(_eval(ec or ""))
+    header_rows = _eval(args["--header-rows"])
+    empty_value = _eval(args["--empty"])
+    main(args["SHEETSPEC"], (sr, sc), (er, ec),
+            header_rows=int(args["--header-rows"]),
+            empty_value=empty_value,
+            repeat=args["--repeat"],
+            raw=args["--raw"],
+            file=sys.stdout,
+            output_header=args["--header"])
 
 
 if __name__ == "__main__":
