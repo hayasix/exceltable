@@ -3,7 +3,7 @@
 
 import datetime
 from itertools import count
-from collections import OrderedDict
+from collections import namedtuple, OrderedDict
 
 import xlrd
 
@@ -195,17 +195,11 @@ class BaseReader(object):
             if self.repeat: prev = values
 
 
-class _CSVRecord(object):
-    pass
-
-
 class Reader(BaseReader):
 
     def _build(self, keys, values):
-        rec = _CSVRecord()
-        for k, v in zip(keys, values):
-            setattr(rec, k, v)
-        return rec
+        CSVRecord = namedtuple("CSVRecord", keys)
+        return CSVRecord(*values)
 
 
 class DictReader(BaseReader):

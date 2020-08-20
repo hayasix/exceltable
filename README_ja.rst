@@ -3,6 +3,7 @@ README
 ======
 
 | 2016-08-12 林秀樹
+| 2020-08-20 林秀樹
 
 
 このアーカイブについて
@@ -25,7 +26,7 @@ Python は Python Software Foundation の登録商標または商標であり、
 動作条件
 ========
 
-- Python 3.5
+- Python 3.5+
 
 
 ライセンス
@@ -57,23 +58,23 @@ Zope Public License (ZPL) Version 2.1 を採用しています。
 使い方
 ======
 
-``exceltable`` は次のクラスを提供します。
+``exceltable.reader`` は次のクラスを提供します。
 
 :Reader(path, sheet, start_row=0, stop_row='', start_col='$A', stop_col='', header=True, header_rows=1, empty=None, repeat=False):
 
     指定のファイル・シート・範囲に記述された表の内容を読み取り、
     各レコードの内容を順次返すジェネレーターを生成します。
     表の 1 行目がフィールド名、2 行目以降が各フィールドの値となります。
-    ジェネレーターが返す各レコードは、各フィールド名を属性として持つ
-    オブジェクトです。
+    ジェネレーターは各レコードを、各フィールド名を属性として持つ
+    CSVRecord(namedtuple) オブジェクトとして返します。
 
 :DictReader(path, sheet, start_row=0, stop_row='', start_col='$A', stop_col='', header=True, header_rows=1, empty=None, repeat=False):
 
     指定のファイル・シート・範囲に記述された表の内容を読み取り、
     各レコードの内容を順次返すジェネレーターを生成します。
     表の 1 行目がフィールド名、2 行目以降が各フィールドの値となります。
-    ジェネレーターが返す各レコードは、各フィールド名とその値からなる
-    順序つき辞書 (OrderedDict) です。
+    ジェネレーターは各レコードを、各フィールド名とその値からなる
+    OrderedDict オブジェクトとして返します。
 
 
 コマンドラインツール

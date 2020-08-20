@@ -51,10 +51,6 @@ R1C1FORMAT = re.compile(r"[Rr](\d+)[Cc](\d+)$", re.IGNORECASE)
 A1FORMAT = re.compile(r"([A-Z]+)(\d+)$", re.IGNORECASE)
 
 
-class Args(dict):
-    pass
-
-
 def _inner_col(col):
     if col is None or col == "": return ""
     if isinstance(col, int): return col - 1
@@ -110,7 +106,7 @@ def main(sheetspec, start, stop,
     if not file:
         if output_header: return fieldnames, table
         return table
-    writer = csv.DictWriter(file, fieldnames)
+    writer = csv.DictWriter(file, fieldnames, lineterminator="\n")
     if output_header: writer.writeheader()
     for row in table:
         for k, v in row.items():
