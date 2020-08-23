@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# vim: set fileencoding=utf-8 fileformat=unix :
+# vim: set fileencoding=utf-8 fileformat=unix expandtab :
 
-__version__ = "3.4.5"
+__version__ = "3.4.6"
 __author__ = "HAYASHI,Hideki"
 __email__ = "hideki@hayasix.com"
 __license__ = "ZPL 2.1"

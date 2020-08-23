@@ -1,5 +1,5 @@
-#!/usr/bin/env python3.5
-# vim: set fileencoding=utf-8 fileformat=unix :
+#!/usr/bin/env python3
+# vim: set fileencoding=utf-8 fileformat=unix expandtab :
 
 import datetime
 from itertools import count
@@ -33,21 +33,32 @@ class BaseReader(object):
             header_rows=1, empty="", repeat=False, trim=True):
         """Initiator.
 
-        source          (xlrd.book.Book) Excel book
-                        (str) pathname of Excel book (.xl*)
-        sheet           (str) worksheet name; None=leftmost
-        start_row       (int) top row number; starts with 0
-        stop_row        (int) bottom row number [1]_ ; starts with 0
-                        (float or str) boundary marker string to stop scan
-                        (callable) see below [2]_
-        start_col       (int) left column number; starts with 0
-        stop_col        (int) right column number [3]_ ; starts with 0
-                        (float or str) boundary marker string to stop scan
-                        (callable) see below [4]_
-        header_rows     (int) rows to read as field names; default=1
-        empty           (float or str) alternative value for empty cells
-        repeat          (bool) repeat cell value of the previous row if blank
-        trim            (bool) suppress redundant zeros [5]_; default=True
+        Parameters
+        ----------
+        source : xlrd.book.Book, str
+            Excel book, or pathname of Excel book (.xl*)
+        sheet : str
+            worksheet name; None=leftmost
+        start_row : int
+            top row number; starts with 0
+        stop_row : int, float, str, callable
+            (int) bottom row number [1]_ (base=0)
+            (float, str) boundary marker string to stop scan
+            (callable) see below [2]_
+        start_col : int
+            left column number; starts with 0
+        stop_col : int, float, str, callable
+            (int) right column number [3]_ ; starts with 0
+            (float or str) boundary marker string to stop scan
+            (callable) see below [4]_
+        header_rows : int
+            rows to read as field names; default=1
+        empty : float, str
+            alternative value for empty cells
+        repeat : bool
+            repeat cell value of the previous row if blank
+        trim : bool
+            suppress redundant zeros [5]_; default=True
 
         .. [1]  stop_row itself is not included in the data read.
         .. [2]  this callable (function) is to accept a list with the row
@@ -84,15 +95,21 @@ class BaseReader(object):
     def _mergearea(self, row, col):
         """Get the associated merge area.
 
-        row         (int) row number of a cell; starts with 0
-        col         (int) column number of a cell; starts with 0
+        Parameters
+        ----------
+        row : int
+            row number of a cell (base=0)
+        col : int
+            column number of a cell (base=0)
 
-        Returns a tuple of 4 integers as (rlo, rhi, clo, chi), where:
-
-            rlo     (int) min. row number; starts with 0
-            rhi     (int) max. row number + 1; starts with 0
-            clo     (int) min. column number; starts with 0
-            chi     (int) max. column number + 1; starts with 0
+        Returns
+        -------
+        tuple[int]
+            a tuple of 4 integers as (rlo, rhi, clo, chi), where:
+                rlo:  min. row number (base=0)
+                rhi:  max. row number + 1 (base=0)
+                clo:  min. column number (base=0)
+                chi:  max. column number + 1 (base=0)
         """
         for (rlo, rhi, clo, chi) in self.sheet.merged_cells:
             if (rlo <= row < rhi and clo <= col < chi):
@@ -114,10 +131,18 @@ class BaseReader(object):
     def _get_fields(self, header_rows=1):
         """Get the field names.
 
-        header_rows (int)   number of rows of the header; default=1
+        Parameters
+        ----------
+        header_rows : int
+            number of rows of the header [default: 1]
 
-        Returns a list of field names.
+        Returns
+        -------
+        list[str]
+            field names
 
+        Notes
+        -----
         If 1 < header_rows, each field name consists of the values of
         vertically continuous cells joined by '_' (underscore).
         """
@@ -151,7 +176,7 @@ class BaseReader(object):
         for k, v in enumerate(fields):
             if v not in fields[:k]: continue
             for n in count(1):
-                alt = "{}_{}".format(v, n)
+                alt = f"{v}_{n}"
                 if alt not in fields[:k]:
                     fields[k] = alt
                     break
@@ -198,8 +223,11 @@ class BaseReader(object):
 class Reader(BaseReader):
 
     def _build(self, keys, values):
-        CSVRecord = namedtuple("CSVRecord", keys)
-        return CSVRecord(*values)
+        try:
+            return self.CSVRecord(*values)
+        except AttributeError:
+            self.CSVRecord = namedtuple("CSVRecord", keys)
+            return self.CSVRecord(*values)
 
 
 class DictReader(BaseReader):

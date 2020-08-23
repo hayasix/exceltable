@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# vim: set fileencoding=utf-8 fileformat=unix :
+# vim: set fileencoding=utf-8 fileformat=unix expandtab :
 
 """Usage: {script} [options] SHEETSPEC
 
@@ -86,7 +86,7 @@ def decompose_address(s):
     if mo: return (mo.group(1), mo.group(2))
     mo = A1FORMAT.match(s)
     if mo: return (mo.group(2), mo.group(1))
-    raise IndexError("illegal cell address '{}'".format(s))
+    raise IndexError(f"illegal cell address '{s}'")
 
 
 def main(sheetspec, start, stop,
@@ -116,7 +116,7 @@ def main(sheetspec, start, stop,
 
 def __main__():
     args = docopt.docopt(__doc__.format(script="exceltable"),
-                       version=__version__)
+                         version=__version__)
     sr = sc = er = ec = None
     if args["--start"]: sr, sc = decompose_address(args["--start"])
     if args["--stop"]: er, ec = decompose_address(args["--stop"])

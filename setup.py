@@ -14,6 +14,7 @@ setup(
     author_email = __email__,
     license = __license__,
     platforms = ["generic"],
+    python_requires=">=3.7",
     packages = ["exceltable"],
     install_requires = ["xlrd>=0.9.4", "docopt>=0.6.2"],
     entry_points = dict(
