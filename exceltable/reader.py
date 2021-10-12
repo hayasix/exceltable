@@ -28,7 +28,7 @@ class BaseReader(object):
 
     """Reader for a table on a Excel sheet"""
 
-    def __init__(self, source, sheet,
+    def __init__(self, source: str, sheet: str = None,
             start_row=0, stop_row="", start_col=0, stop_col="",
             header_rows=1, empty="", repeat=False, trim=True):
         """Initiator.
@@ -37,7 +37,7 @@ class BaseReader(object):
         ----------
         source : xlrd.book.Book, str
             Excel book, or pathname of Excel book (.xl*)
-        sheet : str
+        sheet : str or None
             worksheet name; None=leftmost
         start_row : int
             top row number; starts with 0
