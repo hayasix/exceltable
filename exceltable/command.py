@@ -110,7 +110,8 @@ def main(sheetspec, start, stop,
     if output_header: writer.writeheader()
     for row in table:
         for k, v in row.items():
-            row[k] = str(v or "").replace(NBSP, " ")
+            v = "" if v is None else str(v)
+            row[k] = v.replace(NBSP, " ")
         writer.writerow(row)
 
 
