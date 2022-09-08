@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 # vim: set fileencoding=utf-8 fileformat=unix expandtab :
 
+import os
 import datetime
 from itertools import count
 from collections import namedtuple, OrderedDict
+import tempfile
 
 import xlrd
+import msoffcrypto
 
 
 __all__ = ("Reader", "DictReader")
@@ -28,7 +31,8 @@ class BaseReader(object):
 
     """Reader for a table on a Excel sheet"""
 
-    def __init__(self, source: str, sheet: str = None,
+    def __init__(self, source: str,
+            sheet: str = None, password: str = None,
             start_row=0, stop_row="", start_col=0, stop_col="",
             header_rows=1, empty="", repeat=False, trim=True):
         """Initiator.
@@ -39,6 +43,8 @@ class BaseReader(object):
             Excel book, or pathname of Excel book (.xl*)
         sheet : str or None
             worksheet name; None=leftmost
+        password : str
+            password for encrypted Excel book
         start_row : int
             top row number; starts with 0
         stop_row : int, float, str, callable
@@ -68,8 +74,18 @@ class BaseReader(object):
                 to return True if the column of the cell is the boundary.
         .. [5]  e.g. 3.0 -> 3, 2000-12-31 00:00:00 -> 2000-12-31
         """
-        self.book = (xlrd.open_workbook(source) if isinstance(source, str)
-                        else source)
+        self.tempfile = None
+        if isinstance(source, str):
+            if password:
+                self.tempfile_id, self.tempfile = tempfile.mkstemp()
+                with open(source, "rb") as in_, open(self.tempfile, "wb") as out:
+                    f = msoffcrypto.OfficeFile(in_)
+                    f.load_key(password=password)
+                    f.decrypt(out)
+                source = self.tempfile
+            self.book = xlrd.open_workbook(source)
+        else:
+            self.book = source
         self.sheet = (self.book.sheet_by_name(sheet) if sheet else
                     self.book.sheet_by_index(0))
         self.start_row = start_row
@@ -199,6 +215,11 @@ class BaseReader(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         pass
+
+    def __del__(self):
+        if self.tempfile:
+            os.close(self.tempfile_id)
+            os.remove(self.tempfile)
 
     def __iter__(self):
         cols = slice(self.start_col, self.start_col + len(self.fieldnames))

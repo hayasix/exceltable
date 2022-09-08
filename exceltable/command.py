@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # vim: set fileencoding=utf-8 fileformat=unix expandtab :
 
-"""Usage: {script} [options] SHEETSPEC
+"""Usage: {script} [options] SHEETSPEC [PASSWORD]
 
 Arguments:
   SHEETSPEC             path/to/workbook!sheet or path/to/workbook (the
                         leftmost sheet)
+  PASSWORD              password to open workbook
 
 Options:
   -h, --help            show this help message and exit
@@ -89,7 +90,7 @@ def decompose_address(s):
     raise IndexError(f"illegal cell address '{s}'")
 
 
-def main(sheetspec, start, stop,
+def main(sheetspec, password, start, stop,
          header_rows=1,
          empty_value=None,
          repeat=False,
@@ -98,6 +99,7 @@ def main(sheetspec, start, stop,
          output_header=True):
     book, sheet = (sheetspec.split("!", 1) + [None])[:2]
     table = reader.DictReader(book, sheet,
+                password=password,
                 start_row=start[0], stop_row=stop[0],
                 start_col=start[1], stop_col=stop[1],
                 header_rows=header_rows,
@@ -131,7 +133,7 @@ def __main__():
     ec = _inner_col(_eval(ec or ""))
     header_rows = _eval(args["--header-rows"])
     empty_value = _eval(args["--empty"])
-    main(args["SHEETSPEC"], (sr, sc), (er, ec),
+    main(args["SHEETSPEC"], args["PASSWORD"], (sr, sc), (er, ec),
             header_rows=int(args["--header-rows"]),
             empty_value=empty_value,
             repeat=args["--repeat"],
