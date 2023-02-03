@@ -39,7 +39,7 @@ class BaseReader(object):
 
         Parameters
         ----------
-        source : xlrd.book.Book, str
+        source : xlrd.book.Book, str, PathLike
             Excel book, or pathname of Excel book (.xl*)
         sheet : str or None
             worksheet name; None=leftmost
@@ -75,7 +75,8 @@ class BaseReader(object):
         .. [5]  e.g. 3.0 -> 3, 2000-12-31 00:00:00 -> 2000-12-31
         """
         self.tempfile = None
-        if isinstance(source, str):
+        if isinstance(source, (str, os.PathLike)):
+            source = str(source)
             if password:
                 self.tempfile_id, self.tempfile = tempfile.mkstemp()
                 with open(source, "rb") as in_, open(self.tempfile, "wb") as out:
