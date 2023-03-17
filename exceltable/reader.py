@@ -7,7 +7,8 @@ from itertools import count
 from collections import namedtuple, OrderedDict
 import tempfile
 
-import xlrd
+import openpyxl
+from openpyxl.utils.cell import get_column_letter
 import msoffcrypto
 
 
@@ -16,15 +17,6 @@ __all__ = ("Reader", "DictReader")
 
 NEWLINE = "\n"
 NOTIME = datetime.time(0)
-CONVERT = {
-        #xlrd.XL_CELL_EMPTY: (is added at runtime)
-        xlrd.XL_CELL_TEXT: str,
-        xlrd.XL_CELL_NUMBER: float,
-        #xlrd.XL_CELL_DATE: (is added at runtime)
-        xlrd.XL_CELL_BOOLEAN: bool,
-        xlrd.XL_CELL_ERROR: lambda n: xlrd.error_text_from_code.get(n),
-        xlrd.XL_CELL_BLANK: str,
-        }
 
 
 class BaseReader(object):
@@ -39,7 +31,7 @@ class BaseReader(object):
 
         Parameters
         ----------
-        source : xlrd.book.Book, str, PathLike
+        source : openpyxl.workbook.workbook.Workbook, str, PathLike
             Excel book, or pathname of Excel book (.xl*)
         sheet : str or None
             worksheet name; None=leftmost
@@ -84,11 +76,10 @@ class BaseReader(object):
                     f.load_key(password=password)
                     f.decrypt(out)
                 source = self.tempfile
-            self.book = xlrd.open_workbook(source)
+            self.book = openpyxl.load_workbook(source)
         else:
             self.book = source
-        self.sheet = (self.book.sheet_by_name(sheet) if sheet else
-                    self.book.sheet_by_index(0))
+        self.sheet = self.book.worksheets[sheet or 0]
         self.start_row = start_row
         self.stop_row = stop_row
         self.start_col = start_col
@@ -98,16 +89,6 @@ class BaseReader(object):
         self.repeat = repeat
         self.trim = trim
         self.fieldnames = self._get_fields(header_rows)
-        self._convert = CONVERT.copy()
-        self._convert[xlrd.XL_CELL_EMPTY] = lambda x: self.empty
-        self._convert[xlrd.XL_CELL_DATE] = lambda f: self._mkdt(f)
-
-    def _mkdt(self, f):
-        t = xlrd.xldate_as_tuple(f, self.book.datemode)
-        # Trimming time part is done in _trim().
-        #if f.is_integer(): return datetime.date(*t[:3])
-        if f < 1: return datetime.time(*t[3:])
-        return datetime.datetime(*t)
 
     def _mergearea(self, row, col):
         """Get the associated merge area.
@@ -128,9 +109,10 @@ class BaseReader(object):
                 clo:  min. column number (base=0)
                 chi:  max. column number + 1 (base=0)
         """
-        for (rlo, rhi, clo, chi) in self.sheet.merged_cells:
-            if (rlo <= row < rhi and clo <= col < chi):
-                return (rlo, rhi, clo, chi)
+        row, col = row + 1, col + 1
+        for r in self.sheet.merged_cells.ranges:
+            if (r.min_row <= row < r.max_row and r.min_col <= col < r.max_col):
+                return (r.min_row, r.max_row, r.min_col, r.max_col)
         return None
 
     @staticmethod
@@ -166,7 +148,9 @@ class BaseReader(object):
         fields = []
         r0 = self.start_row
         c0 = self.start_col
-        rows = [self.sheet.row_values(r0 + r) for r in range(header_rows)]
+        rows = self.sheet.iter_rows(min_row=r0 + 1, min_col=c0 + 1,
+                                    values_only=True)
+        rows = list(rows)
         maxcol = c0 + max(len(rows[r]) for r in range(header_rows))
         isbreak = self._isbreak_factory(self.stop_col)
         for col in range(c0, maxcol + 1):
@@ -186,7 +170,7 @@ class BaseReader(object):
                         v = v[:-2]
                     f.append(v)
             field = "_".join(f).replace(NEWLINE, "")
-            fields.append(field or xlrd.colname(col))
+            fields.append(field or get_column_letter(col + 1))
             if isbreak(col, field): break
         fields.pop()
         # Add subscriptions for duplicate field names.
@@ -226,17 +210,14 @@ class BaseReader(object):
         cols = slice(self.start_col, self.start_col + len(self.fieldnames))
         isbreak = self._isbreak_factory(self.stop_row)
         if self.repeat: prev = [None] * len(self.fieldnames)
-        for row in count(self.start_row + self.header_rows):
-            try:
-                types = self.sheet.row_types(row)[cols]
-                values = self.sheet.row_values(row)[cols]
-            except IndexError:
-                break
-            values = [self._convert[t](v) for (t, v) in zip(types, values)]
-            if len(values) < 1 or isbreak(row, values[0]): break
+        for row in self.sheet.iter_rows(
+                min_row=self.start_row + self.header_rows + 1,
+                min_col=self.start_col + 1):
+            values = [c.value for c in row]
+            if len(values) < 1 or isbreak(row[0].row - 1, values[0]): break
             if self.repeat:
                 values = [p if v in (None, "") else v
-                        for (v, p) in zip(values, prev)]
+                          for (v, p) in zip(values, prev)]
             if self.trim: values = self._trim(values)
             yield self._build(self.fieldnames, values)
             if self.repeat: prev = values

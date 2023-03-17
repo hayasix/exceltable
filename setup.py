@@ -16,7 +16,7 @@ setup(
     platforms = ["generic"],
     python_requires=">=3.7",
     packages = ["exceltable"],
-    install_requires = ["xlrd>=0.9.4", "docopt>=0.6.2", "msoffcrypto-tool>=5.0.0"],
+    install_requires = ["openpyxl>=3.0.0", "docopt>=0.6.2", "msoffcrypto-tool>=5.0.0"],
     entry_points = dict(
             console_scripts = ["exceltable=exceltable.command:__main__"],
             ),
