@@ -6,6 +6,7 @@ import datetime
 from itertools import count
 from collections import namedtuple, OrderedDict
 import tempfile
+import re
 
 import openpyxl
 from openpyxl.utils.cell import get_column_letter
@@ -71,12 +72,13 @@ class BaseReader(object):
             source = str(source)
             if password:
                 self.tempfile_id, self.tempfile = tempfile.mkstemp()
-                with open(source, "rb") as in_, open(self.tempfile, "wb") as out:
+                with (open(source, "rb") as in_,
+                      open(self.tempfile, "wb") as out):
                     f = msoffcrypto.OfficeFile(in_)
                     f.load_key(password=password)
                     f.decrypt(out)
                 source = self.tempfile
-            self.book = openpyxl.load_workbook(source)
+            self.book = openpyxl.load_workbook(source, data_only=True)
         else:
             self.book = source
         self.sheet = self.book.worksheets[sheet or 0]
@@ -88,6 +90,9 @@ class BaseReader(object):
         self.empty = empty if isinstance(empty, str) else float(empty)
         self.repeat = repeat
         self.trim = trim
+        self._rows = self.sheet.iter_rows(min_row=start_row + 1,
+                                          min_col=start_col + 1,
+                                          values_only=True)
         self.fieldnames = self._get_fields(header_rows)
 
     def _mergearea(self, row, col):
@@ -111,8 +116,10 @@ class BaseReader(object):
         """
         row, col = row + 1, col + 1
         for r in self.sheet.merged_cells.ranges:
-            if (r.min_row <= row < r.max_row and r.min_col <= col < r.max_col):
-                return (r.min_row, r.max_row, r.min_col, r.max_col)
+            if (r.min_row <= row <= r.max_row and
+                r.min_col <= col <= r.max_col):
+                return (r.min_row - 1, r.max_row - 1,
+                        r.min_col - 1, r.max_col - 1)
         return None
 
     @staticmethod
@@ -146,33 +153,33 @@ class BaseReader(object):
         vertically continuous cells joined by '_' (underscore).
         """
         fields = []
-        r0 = self.start_row
-        c0 = self.start_col
-        rows = self.sheet.iter_rows(min_row=r0 + 1, min_col=c0 + 1,
-                                    values_only=True)
-        rows = list(rows)
-        maxcol = c0 + max(len(rows[r]) for r in range(header_rows))
+        rows = [next(self._rows) for _ in range(header_rows)]
         isbreak = self._isbreak_factory(self.stop_col)
-        for col in range(c0, maxcol + 1):
+        for col in range(max(len(r) for r in rows)):
+            abscol = self.start_col + col
             f = []
             for row in range(header_rows):
-                ma = self._mergearea(r0 + row, col)
+                absrow = self.start_row + row
+                ma = self._mergearea(absrow, abscol)
                 if not ma:
                     try:
                         v = rows[row][col]
                     except IndexError:
                         v = ""
-                elif ma[0] - r0 == row: v = rows[row][ma[2]]
-                else: v = None
+                elif ma[0] == absrow:
+                    v = rows[row][ma[2]]
+                else:
+                    v = None
                 if v:
                     v = str(v)
                     if v.endswith(".0"):
                         v = v[:-2]
                     f.append(v)
             field = "_".join(f).replace(NEWLINE, "")
-            fields.append(field or get_column_letter(col + 1))
-            if isbreak(col, field): break
-        fields.pop()
+            fields.append(field or get_column_letter(abscol + 1))
+            if isbreak(abscol, field):
+                fields.pop()
+                break
         # Add subscriptions for duplicate field names.
         for k, v in enumerate(fields):
             if v not in fields[:k]: continue
@@ -207,14 +214,12 @@ class BaseReader(object):
             os.remove(self.tempfile)
 
     def __iter__(self):
-        cols = slice(self.start_col, self.start_col + len(self.fieldnames))
         isbreak = self._isbreak_factory(self.stop_row)
         if self.repeat: prev = [None] * len(self.fieldnames)
-        for row in self.sheet.iter_rows(
-                min_row=self.start_row + self.header_rows + 1,
-                min_col=self.start_col + 1):
-            values = [c.value for c in row]
-            if len(values) < 1 or isbreak(row[0].row - 1, values[0]): break
+        for absrow, row in enumerate(self._rows,
+                             start=self.start_row + self.header_rows):
+            values = list(row)
+            if len(values) < 1 or isbreak(absrow, values[0]): break
             if self.repeat:
                 values = [p if v in (None, "") else v
                           for (v, p) in zip(values, prev)]
@@ -229,6 +234,7 @@ class Reader(BaseReader):
         try:
             return self.CSVRecord(*values)
         except AttributeError:
+            keys = [re.sub(r"\W", "_", k) for k in keys]
             self.CSVRecord = namedtuple("CSVRecord", keys)
             return self.CSVRecord(*values)
 
