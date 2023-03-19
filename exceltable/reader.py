@@ -81,7 +81,10 @@ class BaseReader(object):
             self.book = openpyxl.load_workbook(source, data_only=True)
         else:
             self.book = source
-        self.sheet = self.book.worksheets[sheet or 0]
+        if sheet and isinstance(sheet, str):
+            self.sheet = self.book[sheet]
+        else:
+            self.sheet = self.book.worksheets[sheet or 0]
         self.start_row = start_row
         self.stop_row = stop_row
         self.start_col = start_col
@@ -218,7 +221,7 @@ class BaseReader(object):
         if self.repeat: prev = [None] * len(self.fieldnames)
         for absrow, row in enumerate(self._rows,
                              start=self.start_row + self.header_rows):
-            values = list(row)
+            values = [self.empty if v is None else v for v in row]
             if len(values) < 1 or isbreak(absrow, values[0]): break
             if self.repeat:
                 values = [p if v in (None, "") else v
