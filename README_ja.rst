@@ -3,7 +3,7 @@ README
 ======
 
 | 2016-08-12 林秀樹
-| 2023-03-17 林秀樹
+| 2023-03-19 林秀樹
 
 
 このアーカイブについて
@@ -60,7 +60,7 @@ Zope Public License (ZPL) Version 2.1 を採用しています。
 
 ``exceltable.reader`` は次のクラスを提供します。
 
-:Reader(path, sheet, password=None, start_row=0, stop_row='', start_col='$A', stop_col='', header=True, header_rows=1, empty=None, repeat=False):
+:Reader(source, sheet, password=None, start_row=0, stop_row='', start_col='$A', stop_col='', header_rows=1, empty=None, repeat=False, trim=True):
 
     指定のファイル・シート・範囲に記述された表の内容を読み取り、
     各レコードの内容を順次返すジェネレーターを生成します。
@@ -68,7 +68,7 @@ Zope Public License (ZPL) Version 2.1 を採用しています。
     ジェネレーターは各レコードを、各フィールド名を属性として持つ
     CSVRecord(namedtuple) オブジェクトとして返します。
 
-:DictReader(path, sheet, password=None, start_row=0, stop_row='', start_col='$A', stop_col='', header=True, header_rows=1, empty=None, repeat=False):
+:DictReader(source, sheet, password=None, start_row=0, stop_row='', start_col='$A', stop_col='', header_rows=1, empty=None, repeat=False, trim=True):
 
     指定のファイル・シート・範囲に記述された表の内容を読み取り、
     各レコードの内容を順次返すジェネレーターを生成します。

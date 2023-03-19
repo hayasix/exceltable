@@ -27,7 +27,7 @@ class BaseReader(object):
     def __init__(self, source: str,
             sheet: str = None, password: str = None,
             start_row=0, stop_row="", start_col=0, stop_col="",
-            header_rows=1, empty="", repeat=False, trim=True):
+            header_rows=1, empty=None, repeat=False, trim=True):
         """Initiator.
 
         Parameters
