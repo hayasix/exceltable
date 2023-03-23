@@ -90,7 +90,7 @@ class BaseReader(object):
         self.start_col = start_col
         self.stop_col = stop_col
         self.header_rows = header_rows
-        self.empty = empty if isinstance(empty, str) else float(empty)
+        self.empty = empty
         self.repeat = repeat
         self.trim = trim
         self._rows = self.sheet.iter_rows(min_row=start_row + 1,
