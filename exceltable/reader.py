@@ -26,7 +26,7 @@ class BaseReader(object):
 
     def __init__(self, source: str,
             sheet: str = None, password: str = None,
-            start_row=0, stop_row="", start_col=0, stop_col="",
+            start_row=0, stop_row=None, start_col=0, stop_col=None,
             header_rows=1, empty=None, repeat=False, trim=True):
         """Initiator.
 
@@ -71,7 +71,7 @@ class BaseReader(object):
         if isinstance(source, (str, os.PathLike)):
             source = str(source)
             if password:
-                self.tempfile_id, self.tempfile = tempfile.mkstemp()
+                self.tempfile_id, self.tempfile = tempfile.mkstemp(suffix=".xlsx")
                 with (open(source, "rb") as in_,
                       open(self.tempfile, "wb") as out):
                     f = msoffcrypto.OfficeFile(in_)
