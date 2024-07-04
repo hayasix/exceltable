@@ -215,6 +215,10 @@ class BaseReader(object):
         if self.tempfile:
             os.close(self.tempfile_id)
             os.remove(self.tempfile)
+        else:
+            self.book.close()
+        # To avoid openpyxl bug:
+        import gc; gc.collect()
 
     def __iter__(self):
         isbreak = self._isbreak_factory(self.stop_row)
