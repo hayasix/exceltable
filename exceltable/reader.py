@@ -212,13 +212,15 @@ class BaseReader(object):
         pass
 
     def __del__(self):
+        self.book.close()
+        # To avoid openpyxl bug:
+        try:
+            import gc; gc.collect()
+        except:
+            pass
         if self.tempfile:
             os.close(self.tempfile_id)
             os.remove(self.tempfile)
-        else:
-            self.book.close()
-        # To avoid openpyxl bug:
-        import gc; gc.collect()
 
     def __iter__(self):
         isbreak = self._isbreak_factory(self.stop_row)
