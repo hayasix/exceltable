@@ -212,7 +212,11 @@ class BaseReader(object):
         pass
 
     def __del__(self):
-        self.book.close()
+        try:
+            self.book.close()
+        except:
+            #breakpoint()
+            pass
         # To avoid openpyxl bug:
         try:
             import gc; gc.collect()
@@ -230,11 +234,10 @@ class BaseReader(object):
             values = [self.empty if v is None else v for v in row]
             if len(values) < 1 or isbreak(absrow, values[0]): break
             if self.repeat:
-                values = [p if v in (None, "") else v
-                          for (v, p) in zip(values, prev)]
+                values, prev = [p if v in (None, "") else v
+                                for (v, p) in zip(values, prev)], values
             if self.trim: values = self._trim(values)
             yield self._build(self.fieldnames, values)
-            if self.repeat: prev = values
 
 
 class Reader(BaseReader):
